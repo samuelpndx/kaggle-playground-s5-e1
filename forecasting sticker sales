@@ -1,0 +1,1224 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "648a8ad7",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-11T21:31:37.911691Z",
+     "iopub.status.busy": "2025-01-11T21:31:37.911363Z",
+     "iopub.status.idle": "2025-01-11T21:31:39.608477Z",
+     "shell.execute_reply": "2025-01-11T21:31:39.607478Z"
+    },
+    "papermill": {
+     "duration": 1.704311,
+     "end_time": "2025-01-11T21:31:39.610339",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:37.906028",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "from sklearn.preprocessing import LabelEncoder\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "import xgboost as xgb\n",
+    "from sklearn.metrics import mean_squared_error"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "1bef92da",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-11T21:31:39.619257Z",
+     "iopub.status.busy": "2025-01-11T21:31:39.618731Z",
+     "iopub.status.idle": "2025-01-11T21:31:40.142456Z",
+     "shell.execute_reply": "2025-01-11T21:31:40.141534Z"
+    },
+    "papermill": {
+     "duration": 0.529922,
+     "end_time": "2025-01-11T21:31:40.144240",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:39.614318",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "df_train = pd.read_csv('/kaggle/input/playground-series-s5e1/train.csv')\n",
+    "df_test = pd.read_csv('/kaggle/input/playground-series-s5e1/test.csv')\n",
+    "df_sub = pd.read_csv('/kaggle/input/playground-series-s5e1/sample_submission.csv')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "31ac90e7",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-11T21:31:40.152475Z",
+     "iopub.status.busy": "2025-01-11T21:31:40.152184Z",
+     "iopub.status.idle": "2025-01-11T21:31:40.227994Z",
+     "shell.execute_reply": "2025-01-11T21:31:40.227000Z"
+    },
+    "papermill": {
+     "duration": 0.081484,
+     "end_time": "2025-01-11T21:31:40.229524",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:40.148040",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>id</th>\n",
+       "      <th>date</th>\n",
+       "      <th>country</th>\n",
+       "      <th>store</th>\n",
+       "      <th>product</th>\n",
+       "      <th>num_sold</th>\n",
+       "      <th>year</th>\n",
+       "      <th>month</th>\n",
+       "      <th>day</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>0</td>\n",
+       "      <td>2010-01-01</td>\n",
+       "      <td>Canada</td>\n",
+       "      <td>Discount Stickers</td>\n",
+       "      <td>Holographic Goose</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>10</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>1</td>\n",
+       "      <td>2010-01-01</td>\n",
+       "      <td>Canada</td>\n",
+       "      <td>Discount Stickers</td>\n",
+       "      <td>Kaggle</td>\n",
+       "      <td>973.0</td>\n",
+       "      <td>10</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>2</td>\n",
+       "      <td>2010-01-01</td>\n",
+       "      <td>Canada</td>\n",
+       "      <td>Discount Stickers</td>\n",
+       "      <td>Kaggle Tiers</td>\n",
+       "      <td>906.0</td>\n",
+       "      <td>10</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>3</td>\n",
+       "      <td>2010-01-01</td>\n",
+       "      <td>Canada</td>\n",
+       "      <td>Discount Stickers</td>\n",
+       "      <td>Kerneler</td>\n",
+       "      <td>423.0</td>\n",
+       "      <td>10</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>4</td>\n",
+       "      <td>2010-01-01</td>\n",
+       "      <td>Canada</td>\n",
+       "      <td>Discount Stickers</td>\n",
+       "      <td>Kerneler Dark Mode</td>\n",
+       "      <td>491.0</td>\n",
+       "      <td>10</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   id       date country              store             product  num_sold  \\\n",
+       "0   0 2010-01-01  Canada  Discount Stickers   Holographic Goose       NaN   \n",
+       "1   1 2010-01-01  Canada  Discount Stickers              Kaggle     973.0   \n",
+       "2   2 2010-01-01  Canada  Discount Stickers        Kaggle Tiers     906.0   \n",
+       "3   3 2010-01-01  Canada  Discount Stickers            Kerneler     423.0   \n",
+       "4   4 2010-01-01  Canada  Discount Stickers  Kerneler Dark Mode     491.0   \n",
+       "\n",
+       "   year  month  day  \n",
+       "0    10      1    1  \n",
+       "1    10      1    1  \n",
+       "2    10      1    1  \n",
+       "3    10      1    1  \n",
+       "4    10      1    1  "
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_train['date'] = pd.to_datetime(df_train['date'])\n",
+    "df_train['year'] = df_train['date'].dt.year % 100  # Get the last two digits of the year\n",
+    "df_train['month'] = df_train['date'].dt.month\n",
+    "df_train['day'] = df_train['date'].dt.day\n",
+    "df_train.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "5a995b12",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-11T21:31:40.238365Z",
+     "iopub.status.busy": "2025-01-11T21:31:40.238069Z",
+     "iopub.status.idle": "2025-01-11T21:31:40.359167Z",
+     "shell.execute_reply": "2025-01-11T21:31:40.358175Z"
+    },
+    "papermill": {
+     "duration": 0.127171,
+     "end_time": "2025-01-11T21:31:40.360648",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:40.233477",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>id</th>\n",
+       "      <th>date</th>\n",
+       "      <th>country</th>\n",
+       "      <th>store</th>\n",
+       "      <th>product</th>\n",
+       "      <th>num_sold</th>\n",
+       "      <th>year</th>\n",
+       "      <th>month</th>\n",
+       "      <th>day</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>0</td>\n",
+       "      <td>2010-01-01</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>10</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>1</td>\n",
+       "      <td>2010-01-01</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>973.0</td>\n",
+       "      <td>10</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>2</td>\n",
+       "      <td>2010-01-01</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>906.0</td>\n",
+       "      <td>10</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>3</td>\n",
+       "      <td>2010-01-01</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>3</td>\n",
+       "      <td>423.0</td>\n",
+       "      <td>10</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>4</td>\n",
+       "      <td>2010-01-01</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>4</td>\n",
+       "      <td>491.0</td>\n",
+       "      <td>10</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   id       date  country  store  product  num_sold  year  month  day\n",
+       "0   0 2010-01-01        0      0        0       NaN    10      1    1\n",
+       "1   1 2010-01-01        0      0        1     973.0    10      1    1\n",
+       "2   2 2010-01-01        0      0        2     906.0    10      1    1\n",
+       "3   3 2010-01-01        0      0        3     423.0    10      1    1\n",
+       "4   4 2010-01-01        0      0        4     491.0    10      1    1"
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "le_country = LabelEncoder()\n",
+    "le_store = LabelEncoder()\n",
+    "le_product = LabelEncoder()\n",
+    "\n",
+    "df_train['country'] = le_country.fit_transform(df_train['country'])\n",
+    "df_train['store'] = le_store.fit_transform(df_train['store'])\n",
+    "df_train['product'] = le_product.fit_transform(df_train['product'])\n",
+    "\n",
+    "df_train.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "1e3429fc",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-11T21:31:40.369558Z",
+     "iopub.status.busy": "2025-01-11T21:31:40.369278Z",
+     "iopub.status.idle": "2025-01-11T21:31:40.385335Z",
+     "shell.execute_reply": "2025-01-11T21:31:40.384450Z"
+    },
+    "papermill": {
+     "duration": 0.022082,
+     "end_time": "2025-01-11T21:31:40.386808",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:40.364726",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "X = df_train.drop(columns=['id', 'date', 'num_sold'])\n",
+    "y = df_train['num_sold']"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "4d832e16",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-11T21:31:40.395853Z",
+     "iopub.status.busy": "2025-01-11T21:31:40.395539Z",
+     "iopub.status.idle": "2025-01-11T21:31:40.402299Z",
+     "shell.execute_reply": "2025-01-11T21:31:40.401587Z"
+    },
+    "papermill": {
+     "duration": 0.012638,
+     "end_time": "2025-01-11T21:31:40.403620",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:40.390982",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "mean_num_sold = np.mean(y)\n",
+    "\n",
+    "y = y.fillna(mean_num_sold)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "dfe1cc22",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-11T21:31:40.412537Z",
+     "iopub.status.busy": "2025-01-11T21:31:40.412267Z",
+     "iopub.status.idle": "2025-01-11T21:31:40.422599Z",
+     "shell.execute_reply": "2025-01-11T21:31:40.421848Z"
+    },
+    "papermill": {
+     "duration": 0.016044,
+     "end_time": "2025-01-11T21:31:40.423985",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:40.407941",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>country</th>\n",
+       "      <th>store</th>\n",
+       "      <th>product</th>\n",
+       "      <th>year</th>\n",
+       "      <th>month</th>\n",
+       "      <th>day</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>10</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>10</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>10</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>3</td>\n",
+       "      <td>10</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>4</td>\n",
+       "      <td>10</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>...</th>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>230125</th>\n",
+       "      <td>5</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>16</td>\n",
+       "      <td>12</td>\n",
+       "      <td>31</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>230126</th>\n",
+       "      <td>5</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>16</td>\n",
+       "      <td>12</td>\n",
+       "      <td>31</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>230127</th>\n",
+       "      <td>5</td>\n",
+       "      <td>1</td>\n",
+       "      <td>2</td>\n",
+       "      <td>16</td>\n",
+       "      <td>12</td>\n",
+       "      <td>31</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>230128</th>\n",
+       "      <td>5</td>\n",
+       "      <td>1</td>\n",
+       "      <td>3</td>\n",
+       "      <td>16</td>\n",
+       "      <td>12</td>\n",
+       "      <td>31</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>230129</th>\n",
+       "      <td>5</td>\n",
+       "      <td>1</td>\n",
+       "      <td>4</td>\n",
+       "      <td>16</td>\n",
+       "      <td>12</td>\n",
+       "      <td>31</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>230130 rows × 6 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "        country  store  product  year  month  day\n",
+       "0             0      0        0    10      1    1\n",
+       "1             0      0        1    10      1    1\n",
+       "2             0      0        2    10      1    1\n",
+       "3             0      0        3    10      1    1\n",
+       "4             0      0        4    10      1    1\n",
+       "...         ...    ...      ...   ...    ...  ...\n",
+       "230125        5      1        0    16     12   31\n",
+       "230126        5      1        1    16     12   31\n",
+       "230127        5      1        2    16     12   31\n",
+       "230128        5      1        3    16     12   31\n",
+       "230129        5      1        4    16     12   31\n",
+       "\n",
+       "[230130 rows x 6 columns]"
+      ]
+     },
+     "execution_count": 7,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "X"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "16f1f002",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-11T21:31:40.433179Z",
+     "iopub.status.busy": "2025-01-11T21:31:40.432879Z",
+     "iopub.status.idle": "2025-01-11T21:31:41.064608Z",
+     "shell.execute_reply": "2025-01-11T21:31:41.063687Z"
+    },
+    "papermill": {
+     "duration": 0.638139,
+     "end_time": "2025-01-11T21:31:41.066242",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:40.428103",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<style>#sk-container-id-1 {color: black;background-color: white;}#sk-container-id-1 pre{padding: 0;}#sk-container-id-1 div.sk-toggleable {background-color: white;}#sk-container-id-1 label.sk-toggleable__label {cursor: pointer;display: block;width: 100%;margin-bottom: 0;padding: 0.3em;box-sizing: border-box;text-align: center;}#sk-container-id-1 label.sk-toggleable__label-arrow:before {content: \"▸\";float: left;margin-right: 0.25em;color: #696969;}#sk-container-id-1 label.sk-toggleable__label-arrow:hover:before {color: black;}#sk-container-id-1 div.sk-estimator:hover label.sk-toggleable__label-arrow:before {color: black;}#sk-container-id-1 div.sk-toggleable__content {max-height: 0;max-width: 0;overflow: hidden;text-align: left;background-color: #f0f8ff;}#sk-container-id-1 div.sk-toggleable__content pre {margin: 0.2em;color: black;border-radius: 0.25em;background-color: #f0f8ff;}#sk-container-id-1 input.sk-toggleable__control:checked~div.sk-toggleable__content {max-height: 200px;max-width: 100%;overflow: auto;}#sk-container-id-1 input.sk-toggleable__control:checked~label.sk-toggleable__label-arrow:before {content: \"▾\";}#sk-container-id-1 div.sk-estimator input.sk-toggleable__control:checked~label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-1 div.sk-label input.sk-toggleable__control:checked~label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-1 input.sk-hidden--visually {border: 0;clip: rect(1px 1px 1px 1px);clip: rect(1px, 1px, 1px, 1px);height: 1px;margin: -1px;overflow: hidden;padding: 0;position: absolute;width: 1px;}#sk-container-id-1 div.sk-estimator {font-family: monospace;background-color: #f0f8ff;border: 1px dotted black;border-radius: 0.25em;box-sizing: border-box;margin-bottom: 0.5em;}#sk-container-id-1 div.sk-estimator:hover {background-color: #d4ebff;}#sk-container-id-1 div.sk-parallel-item::after {content: \"\";width: 100%;border-bottom: 1px solid gray;flex-grow: 1;}#sk-container-id-1 div.sk-label:hover label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-1 div.sk-serial::before {content: \"\";position: absolute;border-left: 1px solid gray;box-sizing: border-box;top: 0;bottom: 0;left: 50%;z-index: 0;}#sk-container-id-1 div.sk-serial {display: flex;flex-direction: column;align-items: center;background-color: white;padding-right: 0.2em;padding-left: 0.2em;position: relative;}#sk-container-id-1 div.sk-item {position: relative;z-index: 1;}#sk-container-id-1 div.sk-parallel {display: flex;align-items: stretch;justify-content: center;background-color: white;position: relative;}#sk-container-id-1 div.sk-item::before, #sk-container-id-1 div.sk-parallel-item::before {content: \"\";position: absolute;border-left: 1px solid gray;box-sizing: border-box;top: 0;bottom: 0;left: 50%;z-index: -1;}#sk-container-id-1 div.sk-parallel-item {display: flex;flex-direction: column;z-index: 1;position: relative;background-color: white;}#sk-container-id-1 div.sk-parallel-item:first-child::after {align-self: flex-end;width: 50%;}#sk-container-id-1 div.sk-parallel-item:last-child::after {align-self: flex-start;width: 50%;}#sk-container-id-1 div.sk-parallel-item:only-child::after {width: 0;}#sk-container-id-1 div.sk-dashed-wrapped {border: 1px dashed gray;margin: 0 0.4em 0.5em 0.4em;box-sizing: border-box;padding-bottom: 0.4em;background-color: white;}#sk-container-id-1 div.sk-label label {font-family: monospace;font-weight: bold;display: inline-block;line-height: 1.2em;}#sk-container-id-1 div.sk-label-container {text-align: center;}#sk-container-id-1 div.sk-container {/* jupyter's `normalize.less` sets `[hidden] { display: none; }` but bootstrap.min.css set `[hidden] { display: none !important; }` so we also need the `!important` here to be able to override the default hidden behavior on the sphinx rendered scikit-learn.org. See: https://github.com/scikit-learn/scikit-learn/issues/21755 */display: inline-block !important;position: relative;}#sk-container-id-1 div.sk-text-repr-fallback {display: none;}</style><div id=\"sk-container-id-1\" class=\"sk-top-container\"><div class=\"sk-text-repr-fallback\"><pre>XGBRegressor(base_score=None, booster=None, callbacks=None,\n",
+       "             colsample_bylevel=None, colsample_bynode=None,\n",
+       "             colsample_bytree=None, device=None, early_stopping_rounds=None,\n",
+       "             enable_categorical=False, eval_metric=None, feature_types=None,\n",
+       "             gamma=None, grow_policy=None, importance_type=None,\n",
+       "             interaction_constraints=None, learning_rate=None, max_bin=None,\n",
+       "             max_cat_threshold=None, max_cat_to_onehot=None,\n",
+       "             max_delta_step=None, max_depth=None, max_leaves=None,\n",
+       "             min_child_weight=None, missing=nan, monotone_constraints=None,\n",
+       "             multi_strategy=None, n_estimators=100, n_jobs=None,\n",
+       "             num_parallel_tree=None, random_state=None, ...)</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br />On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class=\"sk-container\" hidden><div class=\"sk-item\"><div class=\"sk-estimator sk-toggleable\"><input class=\"sk-toggleable__control sk-hidden--visually\" id=\"sk-estimator-id-1\" type=\"checkbox\" checked><label for=\"sk-estimator-id-1\" class=\"sk-toggleable__label sk-toggleable__label-arrow\">XGBRegressor</label><div class=\"sk-toggleable__content\"><pre>XGBRegressor(base_score=None, booster=None, callbacks=None,\n",
+       "             colsample_bylevel=None, colsample_bynode=None,\n",
+       "             colsample_bytree=None, device=None, early_stopping_rounds=None,\n",
+       "             enable_categorical=False, eval_metric=None, feature_types=None,\n",
+       "             gamma=None, grow_policy=None, importance_type=None,\n",
+       "             interaction_constraints=None, learning_rate=None, max_bin=None,\n",
+       "             max_cat_threshold=None, max_cat_to_onehot=None,\n",
+       "             max_delta_step=None, max_depth=None, max_leaves=None,\n",
+       "             min_child_weight=None, missing=nan, monotone_constraints=None,\n",
+       "             multi_strategy=None, n_estimators=100, n_jobs=None,\n",
+       "             num_parallel_tree=None, random_state=None, ...)</pre></div></div></div></div></div>"
+      ],
+      "text/plain": [
+       "XGBRegressor(base_score=None, booster=None, callbacks=None,\n",
+       "             colsample_bylevel=None, colsample_bynode=None,\n",
+       "             colsample_bytree=None, device=None, early_stopping_rounds=None,\n",
+       "             enable_categorical=False, eval_metric=None, feature_types=None,\n",
+       "             gamma=None, grow_policy=None, importance_type=None,\n",
+       "             interaction_constraints=None, learning_rate=None, max_bin=None,\n",
+       "             max_cat_threshold=None, max_cat_to_onehot=None,\n",
+       "             max_delta_step=None, max_depth=None, max_leaves=None,\n",
+       "             min_child_weight=None, missing=nan, monotone_constraints=None,\n",
+       "             multi_strategy=None, n_estimators=100, n_jobs=None,\n",
+       "             num_parallel_tree=None, random_state=None, ...)"
+      ]
+     },
+     "execution_count": 8,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "model = xgb.XGBRegressor(objective='reg:squarederror', n_estimators=100)\n",
+    "model.fit(X, y)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4db5f5cf",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004004,
+     "end_time": "2025-01-11T21:31:41.074708",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:41.070704",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# Predictions"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "efada9dc",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-11T21:31:41.084287Z",
+     "iopub.status.busy": "2025-01-11T21:31:41.083948Z",
+     "iopub.status.idle": "2025-01-11T21:31:41.137921Z",
+     "shell.execute_reply": "2025-01-11T21:31:41.136942Z"
+    },
+    "papermill": {
+     "duration": 0.060624,
+     "end_time": "2025-01-11T21:31:41.139532",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:41.078908",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>id</th>\n",
+       "      <th>date</th>\n",
+       "      <th>country</th>\n",
+       "      <th>store</th>\n",
+       "      <th>product</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>230130</td>\n",
+       "      <td>2017-01-01</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>230131</td>\n",
+       "      <td>2017-01-01</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>230132</td>\n",
+       "      <td>2017-01-01</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>2</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>230133</td>\n",
+       "      <td>2017-01-01</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>3</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>230134</td>\n",
+       "      <td>2017-01-01</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>4</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "       id        date  country  store  product\n",
+       "0  230130  2017-01-01        0      0        0\n",
+       "1  230131  2017-01-01        0      0        1\n",
+       "2  230132  2017-01-01        0      0        2\n",
+       "3  230133  2017-01-01        0      0        3\n",
+       "4  230134  2017-01-01        0      0        4"
+      ]
+     },
+     "execution_count": 9,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_test['country'] = le_country.fit_transform(df_test['country'])\n",
+    "df_test['store'] = le_store.fit_transform(df_test['store'])\n",
+    "df_test['product'] = le_product.fit_transform(df_test['product'])\n",
+    "\n",
+    "# Display the updated DataFrame\n",
+    "df_test.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "62526be3",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-11T21:31:41.149550Z",
+     "iopub.status.busy": "2025-01-11T21:31:41.149262Z",
+     "iopub.status.idle": "2025-01-11T21:31:41.179183Z",
+     "shell.execute_reply": "2025-01-11T21:31:41.178284Z"
+    },
+    "papermill": {
+     "duration": 0.036534,
+     "end_time": "2025-01-11T21:31:41.180685",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:41.144151",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>id</th>\n",
+       "      <th>date</th>\n",
+       "      <th>country</th>\n",
+       "      <th>store</th>\n",
+       "      <th>product</th>\n",
+       "      <th>year</th>\n",
+       "      <th>month</th>\n",
+       "      <th>day</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>230130</td>\n",
+       "      <td>2017-01-01</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>17</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>230131</td>\n",
+       "      <td>2017-01-01</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>17</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>230132</td>\n",
+       "      <td>2017-01-01</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>17</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>230133</td>\n",
+       "      <td>2017-01-01</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>3</td>\n",
+       "      <td>17</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>230134</td>\n",
+       "      <td>2017-01-01</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>4</td>\n",
+       "      <td>17</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "       id       date  country  store  product  year  month  day\n",
+       "0  230130 2017-01-01        0      0        0    17      1    1\n",
+       "1  230131 2017-01-01        0      0        1    17      1    1\n",
+       "2  230132 2017-01-01        0      0        2    17      1    1\n",
+       "3  230133 2017-01-01        0      0        3    17      1    1\n",
+       "4  230134 2017-01-01        0      0        4    17      1    1"
+      ]
+     },
+     "execution_count": 10,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_test['date'] = pd.to_datetime(df_test['date'])\n",
+    "\n",
+    "df_test['year'] = df_test['date'].dt.year % 100  # Get the last two digits of the year\n",
+    "df_test['month'] = df_test['date'].dt.month\n",
+    "df_test['day'] = df_test['date'].dt.day\n",
+    "\n",
+    "df_test.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "830ae10a",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-11T21:31:41.191434Z",
+     "iopub.status.busy": "2025-01-11T21:31:41.191101Z",
+     "iopub.status.idle": "2025-01-11T21:31:41.197457Z",
+     "shell.execute_reply": "2025-01-11T21:31:41.196614Z"
+    },
+    "papermill": {
+     "duration": 0.013275,
+     "end_time": "2025-01-11T21:31:41.198919",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:41.185644",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "X = df_test.drop(columns=['id', 'date'])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "49b62e30",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-11T21:31:41.209497Z",
+     "iopub.status.busy": "2025-01-11T21:31:41.209185Z",
+     "iopub.status.idle": "2025-01-11T21:31:41.306879Z",
+     "shell.execute_reply": "2025-01-11T21:31:41.306082Z"
+    },
+    "papermill": {
+     "duration": 0.105154,
+     "end_time": "2025-01-11T21:31:41.308942",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:41.203788",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "result = model.predict(X)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "7855f76d",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-11T21:31:41.319795Z",
+     "iopub.status.busy": "2025-01-11T21:31:41.319479Z",
+     "iopub.status.idle": "2025-01-11T21:31:41.323775Z",
+     "shell.execute_reply": "2025-01-11T21:31:41.322908Z"
+    },
+    "papermill": {
+     "duration": 0.011365,
+     "end_time": "2025-01-11T21:31:41.325349",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:41.313984",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "df_sub['num_sold'] = result"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "id": "edefed0d",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-11T21:31:41.336027Z",
+     "iopub.status.busy": "2025-01-11T21:31:41.335712Z",
+     "iopub.status.idle": "2025-01-11T21:31:41.344620Z",
+     "shell.execute_reply": "2025-01-11T21:31:41.343888Z"
+    },
+    "papermill": {
+     "duration": 0.015671,
+     "end_time": "2025-01-11T21:31:41.346038",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:41.330367",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>id</th>\n",
+       "      <th>num_sold</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>230130</td>\n",
+       "      <td>728.734619</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>230131</td>\n",
+       "      <td>730.693726</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>230132</td>\n",
+       "      <td>680.174194</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>230133</td>\n",
+       "      <td>351.669067</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>230134</td>\n",
+       "      <td>393.274231</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>...</th>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>98545</th>\n",
+       "      <td>328675</td>\n",
+       "      <td>558.282227</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>98546</th>\n",
+       "      <td>328676</td>\n",
+       "      <td>2657.973877</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>98547</th>\n",
+       "      <td>328677</td>\n",
+       "      <td>2189.710693</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>98548</th>\n",
+       "      <td>328678</td>\n",
+       "      <td>1302.767212</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>98549</th>\n",
+       "      <td>328679</td>\n",
+       "      <td>1502.564331</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>98550 rows × 2 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "           id     num_sold\n",
+       "0      230130   728.734619\n",
+       "1      230131   730.693726\n",
+       "2      230132   680.174194\n",
+       "3      230133   351.669067\n",
+       "4      230134   393.274231\n",
+       "...       ...          ...\n",
+       "98545  328675   558.282227\n",
+       "98546  328676  2657.973877\n",
+       "98547  328677  2189.710693\n",
+       "98548  328678  1302.767212\n",
+       "98549  328679  1502.564331\n",
+       "\n",
+       "[98550 rows x 2 columns]"
+      ]
+     },
+     "execution_count": 14,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_sub"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "id": "61b85a9a",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-11T21:31:41.356592Z",
+     "iopub.status.busy": "2025-01-11T21:31:41.356203Z",
+     "iopub.status.idle": "2025-01-11T21:31:41.507950Z",
+     "shell.execute_reply": "2025-01-11T21:31:41.507137Z"
+    },
+    "papermill": {
+     "duration": 0.158878,
+     "end_time": "2025-01-11T21:31:41.509814",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:41.350936",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "df_sub.to_csv('submission.csv', index=False)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "48fb64b8",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004699,
+     "end_time": "2025-01-11T21:31:41.519739",
+     "exception": false,
+     "start_time": "2025-01-11T21:31:41.515040",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kaggle": {
+   "accelerator": "none",
+   "dataSources": [
+    {
+     "databundleVersionId": 10652996,
+     "sourceId": 85723,
+     "sourceType": "competition"
+    }
+   ],
+   "dockerImageVersionId": 30822,
+   "isGpuEnabled": false,
+   "isInternetEnabled": true,
+   "language": "python",
+   "sourceType": "notebook"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.12"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 6.273466,
+   "end_time": "2025-01-11T21:31:42.144554",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2025-01-11T21:31:35.871088",
+   "version": "2.6.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
